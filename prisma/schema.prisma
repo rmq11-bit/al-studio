@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                    String               @id @default(cuid())
+  role                  String
+  defaultRole           String?
+  name                  String
+  email                 String               @unique
+  passwordHash          String
+  avatarUrl             String?
+  bio                   String?
+  createdAt             DateTime             @default(now())
+  consumerConversations Conversation[]       @relation("ConsumerConversations")
+  consumerRequests      DirectRequest[]      @relation("ConsumerRequests")
+  sentMessages          Message[]
+  photographerProfile   PhotographerProfile?
+  consumerProjects      ProjectPost[]
+}
+
+model PhotographerProfile {
+  id                        String                    @id @default(cuid())
+  userId                    String                    @unique
+  hourlyRate                Float                     @default(0)
+  specialties               String
+  location                  String?
+  isActive                  Boolean                   @default(true)
+  subscriptionStatus        String                    @default("TRIAL")
+  subscriptionExpiresAt     DateTime?
+  subscriptionCanceledAt    DateTime?
+  trialEndsAt               DateTime?
+  availability              Availability[]
+  bids                      Bid[]
+  photographerConversations Conversation[]            @relation("PhotographerConversations")
+  incomingRequests          DirectRequest[]           @relation("PhotographerRequests")
+  media                     Media[]
+  user                      User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionTransactions  SubscriptionTransaction[]
+}
+
+model Media {
+  id             String              @id @default(cuid())
+  photographerId String
+  type           String
+  url            String
+  caption        String?
+  createdAt      DateTime            @default(now())
+  photographer   PhotographerProfile @relation(fields: [photographerId], references: [id], onDelete: Cascade)
+}
+
+model Availability {
+  id             String              @id @default(cuid())
+  photographerId String
+  date           String
+  status         String
+  photographer   PhotographerProfile @relation(fields: [photographerId], references: [id], onDelete: Cascade)
+
+  @@unique([photographerId, date])
+}
+
+model DirectRequest {
+  id             String              @id @default(cuid())
+  consumerId     String
+  photographerId String
+  date           String?
+  hours          Float
+  notes          String?
+  status         String              @default("PENDING")
+  rejectionNote  String?
+  createdAt      DateTime            @default(now())
+  consumer       User                @relation("ConsumerRequests", fields: [consumerId], references: [id])
+  photographer   PhotographerProfile @relation("PhotographerRequests", fields: [photographerId], references: [id])
+}
+
+model Conversation {
+  id              String              @id @default(cuid())
+  type            String              @default("DIRECT_REQUEST")
+  consumerId      String
+  photographerId  String
+  projectId       String?
+  directRequestId String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  consumer        User                @relation("ConsumerConversations", fields: [consumerId], references: [id])
+  photographer    PhotographerProfile @relation("PhotographerConversations", fields: [photographerId], references: [id])
+  messages        Message[]
+
+  @@index([consumerId])
+  @@index([photographerId])
+  @@index([projectId])
+  @@index([directRequestId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  senderId       String
+  senderRole     String       @default("CLIENT")
+  body           String
+  createdAt      DateTime     @default(now())
+  readAt         DateTime?
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId])
+  @@index([senderId])
+}
+
+model ProjectPost {
+  id          String   @id @default(cuid())
+  consumerId  String
+  title       String
+  description String
+  hours       Float
+  status      String   @default("OPEN")
+  createdAt   DateTime @default(now())
+  bids        Bid[]
+  consumer    User     @relation(fields: [consumerId], references: [id])
+}
+
+model Bid {
+  id             String              @id @default(cuid())
+  projectId      String
+  photographerId String
+  price          Float
+  message        String?
+  createdAt      DateTime            @default(now())
+  photographer   PhotographerProfile @relation(fields: [photographerId], references: [id])
+  project        ProjectPost         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, photographerId])
+}
+
+model PaymentIntent {
+  id             String   @id @default(cuid())
+  userId         String
+  photographerId String
+  plan           String
+  provider       String
+  amountHalalas  Int
+  currency       String   @default("SAR")
+  status         String   @default("PENDING")
+  externalId     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+  @@index([photographerId])
+}
+
+model SubscriptionTransaction {
+  id                    String              @id @default(cuid())
+  photographerId        String
+  amount                Int
+  status                String
+  provider              String
+  providerTransactionId String?
+  createdAt             DateTime            @default(now())
+  photographer          PhotographerProfile @relation(fields: [photographerId], references: [id], onDelete: Cascade)
+}
