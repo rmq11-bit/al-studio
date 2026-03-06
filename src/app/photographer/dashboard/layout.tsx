@@ -12,7 +12,7 @@ const navItems = [
   { href: '/photographer/dashboard/media', label: 'المعرض', icon: '🖼️' },
   { href: '/photographer/dashboard/availability', label: 'التقويم', icon: '📅' },
   { href: '/photographer/dashboard/requests', label: 'الطلبات', icon: '📩' },
-  { href: '/photographer/dashboard/messages', label: 'الرسائل', icon: '💬' },
+  { href: '/messages', label: 'الرسائل', icon: '💬' },
 ]
 
 export default async function PhotographerDashboardLayout({

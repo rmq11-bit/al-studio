@@ -4,6 +4,7 @@ import './globals.css'
 import { auth } from '@/auth'
 import SessionProvider from '@/components/SessionProvider'
 import Header from '@/components/Header'
+import Footer from '@/components/Footer'
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -26,10 +27,11 @@ export default async function RootLayout({
 
   return (
     <html lang="ar" dir="rtl" className={cairo.variable}>
-      <body className="font-[family-name:var(--font-cairo)] bg-white text-gray-900 min-h-screen antialiased">
+      <body className="font-[family-name:var(--font-cairo)] bg-white text-gray-900 min-h-screen antialiased flex flex-col">
         <SessionProvider session={session}>
           <Header />
-          <main>{children}</main>
+          <main className="flex-1">{children}</main>
+          <Footer />
         </SessionProvider>
       </body>
     </html>

@@ -83,7 +83,7 @@ export default async function PhotographerProfilePage({
 
               {/* Rate */}
               <div className="flex items-center gap-2 mb-4">
-                <span className="text-sm text-gray-500">سعره في الساعة الواحدة:</span>
+                <span className="text-sm text-gray-500">السعر في الساعة الواحدة:</span>
                 <span className="text-xl font-bold text-[#C0A4A3]">
                   {profile.hourlyRate.toLocaleString('ar-SA')} ريال
                 </span>

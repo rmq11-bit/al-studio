@@ -7,7 +7,8 @@ const navItems = [
   { href: '/browse', label: 'تصفح المصورين', icon: '🔍' },
   { href: '/consumer/dashboard/projects', label: 'مشاريعي', icon: '📋' },
   { href: '/consumer/dashboard/projects/new', label: '+ مشروع جديد', icon: '✨' },
-  { href: '/consumer/dashboard/messages', label: 'الرسائل', icon: '💬' },
+  { href: '/messages', label: 'الرسائل', icon: '💬' },
+  { href: '/consumer/dashboard/profile', label: 'الملف الشخصي', icon: '👤' },
 ]
 
 export default async function ConsumerDashboardLayout({

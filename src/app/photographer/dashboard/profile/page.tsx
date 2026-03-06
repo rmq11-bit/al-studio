@@ -7,6 +7,9 @@ export default function ProfileEditPage() {
   const [name, setName] = useState('')
   const [bio, setBio] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
+  const [avatarPreview, setAvatarPreview] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
   const [hourlyRate, setHourlyRate] = useState('')
   const [location, setLocation] = useState('')
   const [specialties, setSpecialties] = useState<string[]>([])
@@ -40,6 +43,44 @@ export default function ProfileEditPage() {
     )
   }
 
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError('يُسمح فقط بملفات الصور (JPG, PNG, WebP, GIF)')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('حجم الصورة يجب ألا يتجاوز 5 ميغابايت')
+      return
+    }
+
+    setUploadError('')
+    // Instant local preview while upload runs
+    setAvatarPreview(URL.createObjectURL(file))
+    setUploading(true)
+
+    const form = new FormData()
+    form.append('avatar', file)
+    try {
+      const res = await fetch('/api/upload-avatar', { method: 'POST', body: form })
+      if (res.ok) {
+        const { url } = await res.json()
+        setAvatarUrl(url)
+      } else {
+        const d = await res.json()
+        setUploadError(d.error || 'حدث خطأ أثناء رفع الصورة')
+        setAvatarPreview('')
+      }
+    } catch {
+      setUploadError('حدث خطأ في الشبكة')
+      setAvatarPreview('')
+    }
+    setUploading(false)
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
@@ -57,7 +98,7 @@ export default function ProfileEditPage() {
         body: JSON.stringify({
           name: name.trim(),
           bio: bio.trim(),
-          avatarUrl: avatarUrl.trim() || null,
+          avatarUrl: avatarUrl || null,
           hourlyRate: parseFloat(hourlyRate),
           specialties,
           location: location.trim() || null,
@@ -126,18 +167,42 @@ export default function ProfileEditPage() {
             />
           </div>
 
+          {/* ── Avatar upload ──────────────────────────────────────────────── */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">رابط الصورة الشخصية (URL)</label>
-            <input
-              type="url"
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="https://..."
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#C0A4A3] focus:ring-2 focus:ring-[#C0A4A3]/20"
-            />
-            {avatarUrl && (
-              <img src={avatarUrl} alt="صورة شخصية" className="w-16 h-16 rounded-xl object-cover mt-2 border border-gray-200" />
+            <label className="block text-sm font-semibold text-gray-700 mb-2">الصورة الشخصية</label>
+
+            {/* Preview: local blob while uploading, then persisted server URL */}
+            {(avatarPreview || avatarUrl) && (
+              <div className="mb-3">
+                <img
+                  src={avatarPreview || avatarUrl}
+                  alt="معاينة الصورة الشخصية"
+                  className="w-20 h-20 rounded-xl object-cover border border-gray-200"
+                />
+                {uploading && (
+                  <p className="text-xs text-[#C0A4A3] mt-1">جاري الرفع…</p>
+                )}
+              </div>
             )}
+
+            <label
+              className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 hover:bg-gray-100 transition-colors ${uploading ? 'opacity-60 pointer-events-none' : ''}`}
+            >
+              <span>📷</span>
+              <span>{uploading ? 'جاري الرفع…' : 'اختر صورة من الجهاز'}</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                disabled={uploading}
+                className="hidden"
+              />
+            </label>
+
+            <p className="text-xs text-gray-400 mt-1.5">
+              الصيغ المدعومة: JPG · PNG · WebP · GIF &nbsp;·&nbsp; الحد الأقصى: 5 ميغابايت
+            </p>
+            {uploadError && <p className="text-xs text-red-500 mt-1">{uploadError}</p>}
           </div>
 
           <div>
@@ -157,7 +222,7 @@ export default function ProfileEditPage() {
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              سعره في الساعة الواحدة (ريال) <span className="text-red-400">*</span>
+              السعر في الساعة الواحدة ( ريال ) <span className="text-red-400">*</span>
             </label>
             <input
               type="number"
@@ -195,7 +260,7 @@ export default function ProfileEditPage() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || uploading}
           className="w-full bg-[#C0A4A3] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#A88887] transition-colors disabled:opacity-60"
         >
           {loading ? 'جاري الحفظ...' : 'حفظ التغييرات'}
