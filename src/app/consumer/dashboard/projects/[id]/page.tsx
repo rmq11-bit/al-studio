@@ -30,11 +30,14 @@ export default async function ProjectDetailPage({
 
   if (!project) notFound()
 
+  const userRole = (session?.user as any)?.role as string | undefined
+  const userId   = session?.user?.id
+
   // Check if current user is the consumer
-  const isOwner = session?.user.id === project.consumerId
+  const isOwner = userId === project.consumerId
   // Check if current user is a photographer who already bid
-  const myProfile = session?.user.role === 'PHOTOGRAPHER'
-    ? await prisma.photographerProfile.findUnique({ where: { userId: session.user.id } })
+  const myProfile = userRole === 'PHOTOGRAPHER'
+    ? await prisma.photographerProfile.findUnique({ where: { userId: userId! } })
     : null
   const myBid = myProfile ? project.bids.find((b) => b.photographerId === myProfile.id) : null
 
@@ -148,7 +151,7 @@ export default async function ProjectDetailPage({
       </div>
 
       {/* Bid form for photographers */}
-      {session?.user.role === 'PHOTOGRAPHER' && project.status === 'OPEN' && (
+      {userRole === 'PHOTOGRAPHER' && project.status === 'OPEN' && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           <h2 className="font-bold text-gray-800 mb-4">تقديم عرضك</h2>
           {myBid ? (

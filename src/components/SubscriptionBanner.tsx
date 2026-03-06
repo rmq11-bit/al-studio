@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
 
 export default function SubscriptionBanner({
   status,
@@ -9,12 +10,27 @@ export default function SubscriptionBanner({
   status: string
   expiresAt?: Date | string | null
 }) {
-  // Hide banner when the photographer has effective access:
-  //   ACTIVE always has access
-  //   CANCELED has access until subscriptionExpiresAt (if it's still in the future)
-  const effectiveActive =
-    status === 'ACTIVE' ||
-    (status === 'CANCELED' && expiresAt != null && new Date(expiresAt) > new Date())
+  // ── Hydration-safe date comparison ───────────────────────────────────────
+  // `new Date()` on the server returns UTC; on the client it returns local
+  // time. If we compute `effectiveActive` during SSR and the result differs
+  // from the client's computation we get a React hydration mismatch.
+  //
+  // Strategy: default to NOT showing the banner during SSR (mounted = false),
+  // then evaluate the real condition after mount. This way the server and
+  // client both render null for the first paint, eliminating any mismatch.
+  const [mounted, setMounted] = useState(false)
+  const [effectiveActive, setEffectiveActive] = useState(false)
+
+  useEffect(() => {
+    const isActive =
+      status === 'ACTIVE' ||
+      (status === 'CANCELED' && expiresAt != null && new Date(expiresAt) > new Date())
+    setEffectiveActive(isActive)
+    setMounted(true)
+  }, [status, expiresAt])
+
+  // Before mount, render nothing — identical on server and client, no mismatch.
+  if (!mounted) return null
 
   if (effectiveActive) return null
 

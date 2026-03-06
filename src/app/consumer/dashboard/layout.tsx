@@ -17,7 +17,9 @@ export default async function ConsumerDashboardLayout({
   children: React.ReactNode
 }) {
   const session = await auth()
-  if (!session || session.user.role !== 'CONSUMER') redirect('/auth/login')
+  // session.user is optional in NextAuth v5 — guard both session and user.role
+  const role = (session?.user as any)?.role as string | undefined
+  if (!session || role !== 'CONSUMER') redirect('/auth/login')
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -25,19 +27,19 @@ export default async function ConsumerDashboardLayout({
       <aside className="w-56 bg-white border-l border-gray-100 min-h-screen shrink-0 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
         <div className="p-4">
           <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-            {(session.user as any).avatarUrl ? (
+            {(session.user as any)?.avatarUrl ? (
               <img
                 src={(session.user as any).avatarUrl}
-                alt={session.user.name ?? ''}
+                alt={session.user?.name ?? ''}
                 className="w-10 h-10 rounded-xl object-cover"
               />
             ) : (
               <div className="w-10 h-10 rounded-xl bg-[#C0A4A3] flex items-center justify-center text-white font-bold">
-                {session.user.name?.[0]}
+                {session.user?.name?.[0]}
               </div>
             )}
             <div className="min-w-0">
-              <p className="font-bold text-gray-800 text-sm truncate">{session.user.name}</p>
+              <p className="font-bold text-gray-800 text-sm truncate">{session.user?.name}</p>
               <p className="text-xs text-[#C0A4A3]">عميل</p>
             </div>
           </div>

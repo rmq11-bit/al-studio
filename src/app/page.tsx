@@ -3,7 +3,14 @@ import { prisma } from '@/lib/prisma'
 import { effectiveSubscriptionWhere } from '@/lib/subscription/isEffectiveSubscriptionActive'
 
 export default async function HomePage() {
-  const photographerCount = await prisma.photographerProfile.count({ where: effectiveSubscriptionWhere() })
+  // Wrap in try/catch so a DB connection failure (e.g. missing DATABASE_URL on Vercel)
+  // renders a graceful fallback instead of crashing the entire page.
+  let photographerCount = 0
+  try {
+    photographerCount = await prisma.photographerProfile.count({ where: effectiveSubscriptionWhere() })
+  } catch {
+    // silently fall back to 0 — the rest of the page still renders
+  }
 
   return (
     <div className="min-h-screen">

@@ -9,11 +9,15 @@ export default auth((req) => {
     return NextResponse.redirect(new URL('/auth/login', req.url))
   }
 
-  if (pathname.startsWith('/photographer/dashboard') && session.user.role !== 'PHOTOGRAPHER') {
+  // Use optional chaining: session.user is typed as optional in NextAuth v5.
+  // Without it, accessing session.user.role throws when user is undefined.
+  const role = (session?.user as any)?.role as string | undefined
+
+  if (pathname.startsWith('/photographer/dashboard') && role !== 'PHOTOGRAPHER') {
     return NextResponse.redirect(new URL('/', req.url))
   }
 
-  if (pathname.startsWith('/consumer/dashboard') && session.user.role !== 'CONSUMER') {
+  if (pathname.startsWith('/consumer/dashboard') && role !== 'CONSUMER') {
     return NextResponse.redirect(new URL('/', req.url))
   }
 

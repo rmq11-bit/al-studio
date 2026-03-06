@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface Props {
   availability: { date: string; status: string }[]
@@ -15,9 +15,34 @@ const MONTHS_AR = [
 ]
 
 export default function CalendarView({ availability, editable = false, onToggle }: Props) {
-  const today = new Date()
-  const [currentMonth, setCurrentMonth] = useState(today.getMonth())
-  const [currentYear, setCurrentYear] = useState(today.getFullYear())
+  // ── Hydration-safe date handling ─────────────────────────────────────────
+  // `new Date()` on the Vercel server returns UTC time; on the browser it
+  // returns the user's LOCAL time. In non-UTC timezones these can differ by
+  // a full day, causing React hydration mismatches and a client-side crash.
+  //
+  // Solution: keep `mounted = false` during SSR so we render a neutral
+  // placeholder that is identical on server and client. After the first
+  // browser paint (useEffect), we set real local-time values and show the
+  // full calendar — with zero hydration conflict.
+  const [mounted, setMounted] = useState(false)
+  const [todayStr, setTodayStr] = useState('')
+  const [currentMonth, setCurrentMonth] = useState(0)
+  const [currentYear, setCurrentYear] = useState(2024)
+
+  useEffect(() => {
+    const now = new Date()
+    const month = now.getMonth()
+    const year = now.getFullYear()
+    const day = now.getDate()
+    setCurrentMonth(month)
+    setCurrentYear(year)
+    setTodayStr(
+      `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+    )
+    setMounted(true)
+  }, [])
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   const availMap = new Map(availability.map((a) => [a.date, a.status]))
 
@@ -32,10 +57,6 @@ export default function CalendarView({ availability, editable = false, onToggle 
   function formatDate(year: number, month: number, day: number) {
     return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
   }
-
-  const daysInMonth = getDaysInMonth(currentYear, currentMonth)
-  const firstDay = getFirstDayOfMonth(currentYear, currentMonth)
-  const todayStr = formatDate(today.getFullYear(), today.getMonth(), today.getDate())
 
   function prevMonth() {
     if (currentMonth === 0) {
@@ -54,6 +75,18 @@ export default function CalendarView({ availability, editable = false, onToggle 
       setCurrentMonth((m) => m + 1)
     }
   }
+
+  // Render a neutral loading skeleton until the client has mounted.
+  // This skeleton is identical on server and client, so React hydration
+  // never sees a mismatch.
+  if (!mounted) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm animate-pulse h-64" />
+    )
+  }
+
+  const daysInMonth = getDaysInMonth(currentYear, currentMonth)
+  const firstDay = getFirstDayOfMonth(currentYear, currentMonth)
 
   const cells: (number | null)[] = [
     ...Array(firstDay).fill(null),
@@ -99,7 +132,9 @@ export default function CalendarView({ availability, editable = false, onToggle 
           const status = availMap.get(dateStr)
           const isAvailable = status === 'AVAILABLE'
           const isToday = dateStr === todayStr
-          const isPast = new Date(dateStr) < today && dateStr !== todayStr
+          // todayStr is guaranteed to be the real local date (set in useEffect),
+          // so this comparison is always correct after mount.
+          const isPast = todayStr !== '' && dateStr < todayStr
 
           return (
             <button

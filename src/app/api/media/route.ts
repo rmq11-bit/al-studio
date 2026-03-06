@@ -17,7 +17,9 @@ export async function POST(req: NextRequest) {
   const contentType = req.headers.get('content-type') ?? ''
 
   if (contentType.includes('multipart/form-data')) {
-    // File upload
+    // File upload path
+    // NOTE: On Vercel the filesystem is read-only at runtime. If writing fails
+    // we return a clear error instead of an unhandled 500 crash.
     const formData = await req.formData()
     const file = formData.get('file') as File | null
     const caption = formData.get('caption') as string | null
@@ -28,24 +30,47 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(bytes)
 
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
-    await mkdir(uploadsDir, { recursive: true })
 
-    const ext = file.name.split('.').pop() ?? 'jpg'
-    const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-    await writeFile(path.join(uploadsDir, filename), buffer)
+    try {
+      await mkdir(uploadsDir, { recursive: true })
 
-    const type = file.type.startsWith('video') ? 'VIDEO' : 'IMAGE'
-    const media = await prisma.media.create({
-      data: {
-        photographerId: profile.id,
-        type,
-        url: `/uploads/${filename}`,
-        caption: caption ?? null,
-      },
-    })
-    return NextResponse.json(media, { status: 201 })
+      const ext = file.name.split('.').pop() ?? 'jpg'
+      const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      await writeFile(path.join(uploadsDir, filename), buffer)
+
+      const type = file.type.startsWith('video') ? 'VIDEO' : 'IMAGE'
+      const media = await prisma.media.create({
+        data: {
+          photographerId: profile.id,
+          type,
+          url: `/uploads/${filename}`,
+          caption: caption ?? null,
+        },
+      })
+      return NextResponse.json(media, { status: 201 })
+    } catch (err) {
+      const isReadOnly =
+        err instanceof Error &&
+        ('code' in err
+          ? (err as NodeJS.ErrnoException).code === 'EROFS' ||
+            (err as NodeJS.ErrnoException).code === 'ENOENT'
+          : false)
+
+      if (isReadOnly) {
+        return NextResponse.json(
+          {
+            error:
+              'رفع الملفات لا يعمل في هذه البيئة. يرجى استخدام خدمة تخزين سحابي (مثل Vercel Blob أو S3).',
+          },
+          { status: 501 },
+        )
+      }
+
+      console.error('[media] unexpected error:', err)
+      return NextResponse.json({ error: 'حدث خطأ أثناء رفع الملف' }, { status: 500 })
+    }
   } else {
-    // JSON with URL
+    // JSON with URL path — no filesystem involved, always works
     const body = await req.json()
     const { url, type = 'IMAGE', caption } = body
     if (!url) return NextResponse.json({ error: 'الرابط مطلوب' }, { status: 400 })

@@ -22,7 +22,7 @@ export default async function ProjectsPage() {
             <h1 className="text-3xl font-bold text-gray-800">المشاريع المتاحة</h1>
             <p className="text-gray-400 mt-1 text-sm">{projects.length} مشروع مفتوح</p>
           </div>
-          {session?.user.role === 'CONSUMER' && (
+          {(session?.user as any)?.role === 'CONSUMER' && (
             <Link
               href="/consumer/dashboard/projects/new"
               className="bg-[#C0A4A3] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#A88887] transition-colors"
@@ -42,7 +42,7 @@ export default async function ProjectsPage() {
             {projects.map((p) => (
               <Link
                 key={p.id}
-                href={session?.user.role === 'CONSUMER'
+                href={(session?.user as any)?.role === 'CONSUMER'
                   ? `/consumer/dashboard/projects/${p.id}`
                   : `/projects/${p.id}`}
                 className="block bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-all hover:border-[#C0A4A3]/30"

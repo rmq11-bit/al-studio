@@ -28,6 +28,16 @@ export default function Header() {
     return () => clearInterval(timer)
   }, [session])
 
+  // ── Safe role/user helpers ─────────────────────────────────────────────────
+  // In NextAuth v5, Session.user is typed as optional (user?: User). Even when
+  // `session` is not null, `session.user` can be undefined during JWT
+  // validation failures or NextAuth beta edge-cases. All property accesses use
+  // optional chaining to prevent "Cannot read properties of undefined (reading
+  // 'role')" from crashing the entire page for every visitor.
+  const role     = (session?.user as any)?.role as string | undefined
+  const userName = session?.user?.name
+  const avatarUrl = (session?.user as any)?.avatarUrl as string | undefined
+
   return (
     <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -77,7 +87,7 @@ export default function Header() {
                   )}
                 </Link>
 
-                {session.user.role === 'PHOTOGRAPHER' && (
+                {role === 'PHOTOGRAPHER' && (
                   <Link
                     href="/photographer/dashboard"
                     className="text-gray-600 hover:text-[#C0A4A3] transition-colors font-medium"
@@ -85,7 +95,7 @@ export default function Header() {
                     لوحة التحكم
                   </Link>
                 )}
-                {session.user.role === 'CONSUMER' && (
+                {role === 'CONSUMER' && (
                   <>
                     <Link
                       href="/consumer/dashboard"
@@ -102,19 +112,19 @@ export default function Header() {
                   </>
                 )}
                 <div className="flex items-center gap-2 border-r border-gray-200 pr-4">
-                  {(session.user as any).avatarUrl ? (
+                  {avatarUrl ? (
                     <img
-                      src={(session.user as any).avatarUrl}
-                      alt={session.user.name ?? ''}
+                      src={avatarUrl}
+                      alt={userName ?? ''}
                       className="w-8 h-8 rounded-full object-cover border-2 border-[#C0A4A3]/30"
                     />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-[#C0A4A3] flex items-center justify-center text-white text-sm font-bold">
-                      {session.user.name?.[0]}
+                      {userName?.[0] ?? '؟'}
                     </div>
                   )}
                   <span className="text-sm font-medium text-gray-700 hidden sm:block">
-                    {session.user.name}
+                    {userName}
                   </span>
                 </div>
                 <Link

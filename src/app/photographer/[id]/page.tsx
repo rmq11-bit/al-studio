@@ -105,7 +105,7 @@ export default async function PhotographerProfilePage({
               </div>
 
               {/* Action buttons for consumers */}
-              {session && session.user.role === 'CONSUMER' && (
+              {(session?.user as any)?.role === 'CONSUMER' && (
                 <div className="flex gap-3 flex-wrap">
                   <DirectRequestModal
                     photographerUserId={user.id}
