@@ -33,8 +33,10 @@ export async function POST(req: NextRequest) {
                   hourlyRate: 0,
                   specialties: '[]',
                   isActive: true,
-                  subscriptionStatus: 'TRIAL',
-                  trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                  // FREE MODE: grant full access immediately on registration
+                  // Original: subscriptionStatus: 'TRIAL', trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+                  subscriptionStatus: 'ACTIVE',
+                  subscriptionExpiresAt: new Date('2099-01-01T00:00:00.000Z'),
                 },
               },
             }

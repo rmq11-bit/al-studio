@@ -19,19 +19,26 @@ export type EffectiveSubscriptionStatus =
  *
  * Covers both fully-active (ACTIVE) and canceled-but-not-yet-expired (CANCELED)
  * photographers so that cancellation doesn't revoke access until the billing period ends.
+ *
+ * FREE MODE: Platform is free for all users — always returns true.
+ * To re-enable payment gating, remove the early return below.
  */
 export function isEffectiveSubscriptionActive(
   status: string,
   expiresAt: Date | string | null | undefined,
 ): boolean {
-  if (status === 'ACTIVE') return true
-  if (
-    status === 'CANCELED' &&
-    expiresAt != null &&
-    new Date(expiresAt) > new Date()
-  )
-    return true
-  return false
+  // FREE MODE — bypass all subscription checks
+  return true
+
+  // Original payment logic (kept for future use):
+  // if (status === 'ACTIVE') return true
+  // if (
+  //   status === 'CANCELED' &&
+  //   expiresAt != null &&
+  //   new Date(expiresAt) > new Date()
+  // )
+  //   return true
+  // return false
 }
 
 /**
@@ -45,14 +52,18 @@ export function getEffectiveSubscriptionStatus(
   status: string,
   expiresAt: Date | string | null | undefined,
 ): EffectiveSubscriptionStatus {
-  if (status === 'ACTIVE') return 'ACTIVE_FULL'
-  if (
-    status === 'CANCELED' &&
-    expiresAt != null &&
-    new Date(expiresAt) > new Date()
-  )
-    return 'ACTIVE_UNTIL_EXPIRY'
-  return 'INACTIVE'
+  // FREE MODE — all users treated as fully active
+  return 'ACTIVE_FULL'
+
+  // Original logic (kept for future use):
+  // if (status === 'ACTIVE') return 'ACTIVE_FULL'
+  // if (
+  //   status === 'CANCELED' &&
+  //   expiresAt != null &&
+  //   new Date(expiresAt) > new Date()
+  // )
+  //   return 'ACTIVE_UNTIL_EXPIRY'
+  // return 'INACTIVE'
 }
 
 /**
@@ -66,14 +77,18 @@ export function getEffectiveSubscriptionStatus(
  *   prisma.photographerProfile.count({ where: effectiveSubscriptionWhere() })
  */
 export function effectiveSubscriptionWhere() {
-  const now = new Date()
-  return {
-    OR: [
-      { subscriptionStatus: 'ACTIVE' },
-      {
-        subscriptionStatus: 'CANCELED',
-        subscriptionExpiresAt: { gt: now },
-      },
-    ],
-  }
+  // FREE MODE — match all photographers regardless of subscription status
+  return {}
+
+  // Original logic (kept for future use):
+  // const now = new Date()
+  // return {
+  //   OR: [
+  //     { subscriptionStatus: 'ACTIVE' },
+  //     {
+  //       subscriptionStatus: 'CANCELED',
+  //       subscriptionExpiresAt: { gt: now },
+  //     },
+  //   ],
+  // }
 }

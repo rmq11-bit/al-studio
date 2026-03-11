@@ -35,11 +35,10 @@ export default async function PhotographerDashboardLayout({
     ? await checkAndExpireTrial(profile.id, profile.subscriptionStatus, profile.trialEndsAt)
     : 'TRIAL'
 
-  // Gate: redirect to pricing if not ACTIVE
+  // FREE MODE: subscription gate bypassed — all photographers have access.
+  // Original: const sub = await getPhotographerSubscription(session.user.id!)
+  //           if (!sub?.isActive) redirect('/pricing?reason=required')
   const sub = await getPhotographerSubscription(session.user.id!)
-  if (!sub?.isActive) {
-    redirect('/pricing?reason=required')
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

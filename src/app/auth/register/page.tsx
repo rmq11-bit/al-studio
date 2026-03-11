@@ -55,7 +55,9 @@ function RegisterForm() {
         setError('تم التسجيل بنجاح، يرجى تسجيل الدخول')
         router.push('/auth/login')
       } else {
-        router.push(role === 'PHOTOGRAPHER' ? '/photographer/onboarding' : '/consumer/dashboard')
+        // FREE MODE: skip onboarding/subscription prompt, go straight to dashboard
+        // Original: router.push(role === 'PHOTOGRAPHER' ? '/photographer/onboarding' : '/consumer/dashboard')
+        router.push(role === 'PHOTOGRAPHER' ? '/photographer/dashboard' : '/consumer/dashboard')
         router.refresh()
       }
     } catch {
