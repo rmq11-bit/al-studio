@@ -7,6 +7,10 @@ import path from 'path'
 const MAX_BYTES = 5 * 1024 * 1024 // 5 MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
+// Vercel Blob is used when BLOB_READ_WRITE_TOKEN is present (production).
+// Falls back to local filesystem for local development.
+const USE_BLOB = Boolean(process.env.BLOB_READ_WRITE_TOKEN)
+
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
@@ -32,51 +36,38 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const bytes = await file.arrayBuffer()
-  const buffer = Buffer.from(bytes)
+  let url: string
 
-  // Save to public/uploads/avatars/ — served as static files by Next.js.
-  // NOTE: On Vercel the filesystem is read-only at runtime. If writing fails
-  // we return a clear error instead of letting the unhandled exception crash
-  // the function and cause a generic 500 page.
-  const dir = path.join(process.cwd(), 'public', 'uploads', 'avatars')
-
-  try {
-    await mkdir(dir, { recursive: true })
-
+  if (USE_BLOB) {
+    // ── Vercel Blob (production) ──────────────────────────────────────────
+    const { put } = await import('@vercel/blob')
     const ext = (file.name.split('.').pop() ?? 'jpg').toLowerCase()
-    const filename = `${session.user.id}-${Date.now()}.${ext}`
-    await writeFile(path.join(dir, filename), buffer)
+    const filename = `avatars/${session.user.id}-${Date.now()}.${ext}`
+    const blob = await put(filename, file, { access: 'public' })
+    url = blob.url
+  } else {
+    // ── Local filesystem (development) ────────────────────────────────────
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
+    const dir = path.join(process.cwd(), 'public', 'uploads', 'avatars')
 
-    const url = `/uploads/avatars/${filename}`
-
-    // Persist to DB immediately so the avatar shows everywhere right away
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: { avatarUrl: url },
-    })
-
-    return NextResponse.json({ url })
-  } catch (err) {
-    const isReadOnly =
-      err instanceof Error &&
-      ('code' in err
-        ? (err as NodeJS.ErrnoException).code === 'EROFS' ||
-          (err as NodeJS.ErrnoException).code === 'ENOENT'
-        : false)
-
-    if (isReadOnly) {
-      // Vercel / read-only filesystem — file uploads require cloud storage in production.
-      return NextResponse.json(
-        {
-          error:
-            'رفع الملفات لا يعمل في هذه البيئة. يرجى استخدام خدمة تخزين سحابي (مثل Vercel Blob أو S3).',
-        },
-        { status: 501 },
-      )
+    try {
+      await mkdir(dir, { recursive: true })
+      const ext = (file.name.split('.').pop() ?? 'jpg').toLowerCase()
+      const filename = `${session.user.id}-${Date.now()}.${ext}`
+      await writeFile(path.join(dir, filename), buffer)
+      url = `/uploads/avatars/${filename}`
+    } catch (err) {
+      console.error('[upload-avatar] filesystem write error:', err)
+      return NextResponse.json({ error: 'حدث خطأ أثناء رفع الصورة' }, { status: 500 })
     }
-
-    console.error('[upload-avatar] unexpected error:', err)
-    return NextResponse.json({ error: 'حدث خطأ أثناء رفع الصورة' }, { status: 500 })
   }
+
+  // Persist to DB immediately so the avatar shows everywhere right away
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { avatarUrl: url },
+  })
+
+  return NextResponse.json({ url })
 }
