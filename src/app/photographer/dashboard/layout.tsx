@@ -1,10 +1,6 @@
 import Link from 'next/link'
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
-import { checkAndExpireTrial } from '@/lib/subscription'
-import { getPhotographerSubscription } from '@/lib/subscription/requireActivePhotographer'
-import SubscriptionBanner from '@/components/SubscriptionBanner'
 
 const navItems = [
   { href: '/photographer/dashboard', label: 'الرئيسية', icon: '🏠' },
@@ -25,25 +21,9 @@ export default async function PhotographerDashboardLayout({
   const role = (session?.user as any)?.role as string | undefined
   if (!session || role !== 'PHOTOGRAPHER') redirect('/auth/login')
 
-  // Fetch subscription status for banner + gating
-  const profile = await prisma.photographerProfile.findUnique({
-    where: { userId: session.user.id! },
-    select: { id: true, subscriptionStatus: true, trialEndsAt: true },
-  })
-
-  const effectiveStatus = profile
-    ? await checkAndExpireTrial(profile.id, profile.subscriptionStatus, profile.trialEndsAt)
-    : 'TRIAL'
-
-  // FREE MODE: subscription gate bypassed — all photographers have access.
-  // Original: const sub = await getPhotographerSubscription(session.user.id!)
-  //           if (!sub?.isActive) redirect('/pricing?reason=required')
-  const sub = await getPhotographerSubscription(session.user.id!)
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Subscription banner (client component — handles modal) */}
-      <SubscriptionBanner status={effectiveStatus} expiresAt={sub?.expiresAt} />
+      {/* FREE MODE: SubscriptionBanner removed — no payment prompts shown */}
 
       <div className="flex flex-1">
         {/* Sidebar */}

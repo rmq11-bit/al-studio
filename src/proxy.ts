@@ -21,9 +21,21 @@ export default auth((req) => {
     return NextResponse.redirect(new URL('/', req.url))
   }
 
+  // Admin routes: only ADMIN role may enter; everyone else goes home
+  if (pathname.startsWith('/admin') && role !== 'ADMIN') {
+    return NextResponse.redirect(new URL('/', req.url))
+  }
+
   return NextResponse.next()
 })
 
 export const config = {
-  matcher: ['/photographer/dashboard/:path*', '/consumer/dashboard/:path*', '/messages/:path*', '/messages'],
+  matcher: [
+    '/photographer/dashboard/:path*',
+    '/consumer/dashboard/:path*',
+    '/messages/:path*',
+    '/messages',
+    '/admin',
+    '/admin/:path*',
+  ],
 }
