@@ -1,42 +1,50 @@
-import { requireAdmin } from '@/lib/admin'
-import { prisma } from '@/lib/prisma'
-import { revalidatePath } from 'next/cache'
-import { auth } from '@/auth'
+'use client'
 
-// ── Server Action ────────────────────────────────────────────────────────────
+import { useEffect, useState, useTransition } from 'react'
+import { deleteMedia } from './_actions'
 
-async function deleteMedia(formData: FormData) {
-  'use server'
-  const session = await auth()
-  if ((session?.user as any)?.role !== 'ADMIN') return
-  const mediaId = formData.get('mediaId') as string
-  await prisma.media.delete({ where: { id: mediaId } })
-  revalidatePath('/admin/media')
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface MediaItem {
+  id: string
+  url: string
+  type: string
+  caption: string | null
+  createdAt: string
+  photographer: {
+    user: { name: string; email: string }
+  }
 }
 
-// ── Page ─────────────────────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────────────────
 
-export default async function AdminMediaPage() {
-  await requireAdmin()
+export default function AdminMediaPage() {
+  const [media, setMedia] = useState<MediaItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [isPending, startTransition] = useTransition()
 
-  const media = await prisma.media.findMany({
-    orderBy: { createdAt: 'desc' },
-    take: 200,
-    select: {
-      id: true,
-      url: true,
-      type: true,
-      caption: true,
-      createdAt: true,
-      photographer: {
-        select: {
-          user: {
-            select: { name: true, email: true },
-          },
-        },
-      },
-    },
-  })
+  async function loadMedia() {
+    const res = await fetch('/api/admin/media')
+    if (res.ok) {
+      const data = await res.json()
+      setMedia(data)
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    loadMedia()
+  }, [])
+
+  function handleDelete(item: MediaItem) {
+    if (!confirm('Delete this media item? This cannot be undone.')) return
+    const fd = new FormData()
+    fd.set('mediaId', item.id)
+    startTransition(async () => {
+      await deleteMedia(fd)
+      await loadMedia()
+    })
+  }
 
   return (
     <div>
@@ -45,8 +53,12 @@ export default async function AdminMediaPage() {
         <p className="text-gray-500 text-sm">{media.length} uploaded files (latest 200)</p>
       </div>
 
-      {media.length === 0 && (
+      {!loading && media.length === 0 && (
         <div className="text-center py-20 text-gray-600">No media found.</div>
+      )}
+
+      {loading && (
+        <div className="text-center py-20 text-gray-600">Loading…</div>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -73,9 +85,6 @@ export default async function AdminMediaPage() {
                     src={item.url}
                     alt={item.caption ?? 'media'}
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      ;(e.target as HTMLImageElement).style.display = 'none'
-                    }}
                   />
                 )}
               </div>
@@ -90,7 +99,7 @@ export default async function AdminMediaPage() {
 
                 {/* Caption */}
                 {item.caption && (
-                  <p className="text-gray-400 text-xs italic truncate">"{item.caption}"</p>
+                  <p className="text-gray-400 text-xs italic truncate">&quot;{item.caption}&quot;</p>
                 )}
 
                 {/* Date + type */}
@@ -103,23 +112,18 @@ export default async function AdminMediaPage() {
                     {item.type}
                   </span>
                   <span className="text-gray-600 text-[10px] ml-auto">
-                    {item.createdAt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    {new Date(item.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </span>
                 </div>
 
                 {/* Delete */}
-                <form action={deleteMedia}>
-                  <input type="hidden" name="mediaId" value={item.id} />
-                  <button
-                    type="submit"
-                    className="w-full px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-900 text-red-300 hover:bg-red-800 transition-colors"
-                    onClick={(e) => {
-                      if (!confirm('Delete this media item? This cannot be undone.')) e.preventDefault()
-                    }}
-                  >
-                    Delete
-                  </button>
-                </form>
+                <button
+                  onClick={() => handleDelete(item)}
+                  disabled={isPending}
+                  className="w-full px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-900 text-red-300 hover:bg-red-800 transition-colors disabled:opacity-50"
+                >
+                  Delete
+                </button>
               </div>
             </div>
           )
