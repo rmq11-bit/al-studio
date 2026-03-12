@@ -65,13 +65,6 @@ export default function Header() {
             >
               المشاريع
             </Link>
-            <Link
-              href="/pricing"
-              className="text-gray-600 hover:text-[#C0A4A3] transition-colors font-medium"
-            >
-              الأسعار
-            </Link>
-
             {session ? (
               <>
                 {/* Messages link — all logged-in roles */}

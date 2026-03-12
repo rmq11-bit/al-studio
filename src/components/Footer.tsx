@@ -3,7 +3,6 @@ import Link from 'next/link'
 const quickLinks = [
   { href: '/browse', label: 'تصفح المصورين' },
   { href: '/projects', label: 'المشاريع' },
-  { href: '/pricing', label: 'الأسعار' },
 ]
 
 const infoLinks = [

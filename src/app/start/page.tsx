@@ -278,13 +278,7 @@ export default function StartPage() {
               href="/auth/register?role=photographer"
               className="bg-white text-[#C0A4A3] px-10 py-4 rounded-2xl text-lg font-bold hover:bg-gray-50 transition-colors shadow-md"
             >
-              ابدأ كمصور
-            </Link>
-            <Link
-              href="/pricing"
-              className="border-2 border-white/50 text-white px-10 py-4 rounded-2xl text-lg font-bold hover:border-white hover:bg-white/10 transition-all"
-            >
-              عرض الأسعار
+              ابدأ كمصور مجاناً
             </Link>
           </div>
         </div>

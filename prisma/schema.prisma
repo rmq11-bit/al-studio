@@ -17,6 +17,7 @@ model User {
   passwordHash          String
   avatarUrl             String?
   bio                   String?
+  isBanned              Boolean              @default(false)
   createdAt             DateTime             @default(now())
   consumerConversations Conversation[]       @relation("ConsumerConversations")
   consumerRequests      DirectRequest[]      @relation("ConsumerRequests")

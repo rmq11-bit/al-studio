@@ -1,9 +1,6 @@
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
-import { checkAndExpireTrial, SUBSCRIPTION_LABELS, SUBSCRIPTION_COLORS } from '@/lib/subscription'
-import DevSubscriptionSimulator from '@/components/DevSubscriptionSimulator'
-import CancelSubscriptionButton from '@/components/CancelSubscriptionButton'
 
 export default async function PhotographerDashboardHome() {
   const session = await auth()
@@ -21,14 +18,6 @@ export default async function PhotographerDashboardHome() {
     },
   })
 
-  // Resolve effective subscription status (auto-expire trial if needed)
-  const effectiveStatus = profile
-    ? await checkAndExpireTrial(profile.id, profile.subscriptionStatus, profile.trialEndsAt)
-    : 'TRIAL'
-
-  const subColors = SUBSCRIPTION_COLORS[effectiveStatus] ?? SUBSCRIPTION_COLORS.TRIAL
-  const subLabel = SUBSCRIPTION_LABELS[effectiveStatus] ?? effectiveStatus
-
   const stats = [
     { label: 'صور ومقاطع', value: profile?._count.media ?? 0, icon: '🖼️', href: '/photographer/dashboard/media' },
     { label: 'طلبات معلقة', value: profile?.incomingRequests.length ?? 0, icon: '📩', href: '/photographer/dashboard/requests' },
@@ -40,72 +29,6 @@ export default async function PhotographerDashboardHome() {
       <h1 className="text-2xl font-bold text-gray-800 mb-6">
         مرحباً، {session!.user.name} 👋
       </h1>
-
-      {/* Subscription status card */}
-      <div className={`rounded-2xl border p-5 mb-6 ${subColors.bg} ${subColors.border}`}>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className={`text-xs font-semibold uppercase tracking-wider mb-1 ${subColors.text}`}>
-              حالة الاشتراك
-            </p>
-            <p className={`text-lg font-black ${subColors.text}`}>{subLabel}</p>
-            {effectiveStatus === 'TRIAL' && profile?.trialEndsAt && (
-              <p className="text-xs text-gray-500 mt-1">
-                تنتهي الفترة التجريبية في:{' '}
-                {new Date(profile.trialEndsAt).toLocaleDateString('ar-SA')}
-              </p>
-            )}
-            {effectiveStatus === 'ACTIVE' && profile?.subscriptionExpiresAt && (
-              <p className="text-xs text-gray-500 mt-1">
-                ينتهي الاشتراك في:{' '}
-                {new Date(profile.subscriptionExpiresAt).toLocaleDateString('ar-SA')}
-              </p>
-            )}
-            {effectiveStatus === 'CANCELED' && (
-              <p className="text-xs text-orange-600 mt-1">
-                تم إلغاء اشتراكك —{' '}
-                {profile?.subscriptionExpiresAt
-                  ? <>يمكنك استخدام الميزات حتى تاريخ الانتهاء:{' '}
-                      <span className="font-bold">
-                        {new Date(profile.subscriptionExpiresAt).toLocaleDateString('ar-SA')}
-                      </span>
-                    </>
-                  : 'لا يوجد تاريخ انتهاء محدد.'
-                }
-              </p>
-            )}
-            {(effectiveStatus === 'PAST_DUE' || effectiveStatus === 'CANCELLED') && (
-              <p className="text-xs text-red-600 mt-1">
-                لن تظهر في البحث ولا تستطيع استقبال طلبات أو تقديم عروض. تواصل مع الإدارة للاشتراك.
-              </p>
-            )}
-            {effectiveStatus === 'TRIAL' && (
-              <p className="text-xs text-blue-600 mt-1">
-                أنت في فترة تجريبية. للظهور في البحث واستقبال الطلبات تحتاج إلى اشتراك نشط.
-              </p>
-            )}
-          </div>
-          <div className="text-3xl">
-            {effectiveStatus === 'ACTIVE'
-              ? '✅'
-              : effectiveStatus === 'CANCELED'
-              ? '🟠'
-              : effectiveStatus === 'TRIAL'
-              ? '🔵'
-              : '🔴'}
-          </div>
-        </div>
-
-        {/* Cancel subscription option — only for ACTIVE subscriptions */}
-        {effectiveStatus === 'ACTIVE' && (
-          <CancelSubscriptionButton expiresAt={profile?.subscriptionExpiresAt ?? null} />
-        )}
-
-        {/* Development-only subscription simulator */}
-        {process.env.NODE_ENV === 'development' && profile && (
-          <DevSubscriptionSimulator photographerId={profile.id} />
-        )}
-      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">

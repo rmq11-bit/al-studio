@@ -32,6 +32,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           throw new Error('البريد الإلكتروني أو كلمة المرور غير صحيحة')
         }
 
+        if (user.isBanned) {
+          throw new Error('تم تعليق هذا الحساب. تواصل مع الإدارة للمزيد من المعلومات.')
+        }
+
         return {
           id: user.id,
           email: user.email,
