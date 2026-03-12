@@ -139,7 +139,10 @@ export default function Header() {
                   تبديل
                 </Link>
                 <button
-                  onClick={() => signOut({ callbackUrl: '/' })}
+                  onClick={async () => {
+                    await signOut({ redirect: false })
+                    window.location.href = '/'
+                  }}
                   className="text-sm text-gray-400 hover:text-red-400 transition-colors"
                 >
                   خروج
