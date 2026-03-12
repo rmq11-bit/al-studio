@@ -15,7 +15,7 @@ async function guardAdmin() {
   return null
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const forbidden = await guardAdmin()
   if (forbidden) return forbidden
 
@@ -24,8 +24,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
   }
 
+  const { id } = await params
   const user = await prisma.user.update({
-    where: { id: params.id },
+    where: { id },
     data: { isBanned: action === 'ban' },
     select: { id: true, isBanned: true },
   })
@@ -33,22 +34,24 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json(user)
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const forbidden = await guardAdmin()
   if (forbidden) return forbidden
 
+  const { id } = await params
+
   // Prevent self-deletion
   const session = await auth()
-  if (session?.user?.id === params.id) {
+  if (session?.user?.id === id) {
     return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 })
   }
 
   // Prevent deleting other admins via API
-  const target = await prisma.user.findUnique({ where: { id: params.id }, select: { role: true } })
+  const target = await prisma.user.findUnique({ where: { id }, select: { role: true } })
   if (target?.role === 'ADMIN') {
     return NextResponse.json({ error: 'Cannot delete admin accounts' }, { status: 400 })
   }
 
-  await prisma.user.delete({ where: { id: params.id } })
+  await prisma.user.delete({ where: { id } })
   return NextResponse.json({ success: true })
 }
