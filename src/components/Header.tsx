@@ -80,6 +80,17 @@ export default function Header() {
                   )}
                 </Link>
 
+                {role === 'ADMIN' && (
+                  <Link
+                    href="/admin"
+                    className="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 transition-colors font-semibold text-sm"
+                    title="Admin Dashboard"
+                  >
+                    <span>⚙</span>
+                    <span>أدمن</span>
+                  </Link>
+                )}
+
                 {role === 'PHOTOGRAPHER' && (
                   <Link
                     href="/photographer/dashboard"
