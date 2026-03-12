@@ -4,15 +4,17 @@ import Link from 'next/link'
 
 export default async function ConsumerDashboardHome() {
   const session = await auth()
+  const userId = session?.user?.id
+  if (!userId) return null // layout guard already redirects; this is a safety net
 
   const [projectCount, conversationCount, requestCount] = await Promise.all([
-    prisma.projectPost.count({ where: { consumerId: session!.user.id } }),
-    prisma.conversation.count({ where: { consumerId: session!.user.id } }),
-    prisma.directRequest.count({ where: { consumerId: session!.user.id } }),
+    prisma.projectPost.count({ where: { consumerId: userId } }),
+    prisma.conversation.count({ where: { consumerId: userId } }),
+    prisma.directRequest.count({ where: { consumerId: userId } }),
   ])
 
   const recentProjects = await prisma.projectPost.findMany({
-    where: { consumerId: session!.user.id },
+    where: { consumerId: userId },
     include: { _count: { select: { bids: true } } },
     orderBy: { createdAt: 'desc' },
     take: 3,
@@ -27,7 +29,7 @@ export default async function ConsumerDashboardHome() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-800 mb-6">
-        مرحباً، {session!.user.name} 👋
+        مرحباً، {session?.user?.name ?? ''} 👋
       </h1>
 
       {/* Stats */}

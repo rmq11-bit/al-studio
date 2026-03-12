@@ -2,11 +2,10 @@
 
 import { useState, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 function RegisterForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const initialRole = searchParams.get('role') === 'photographer' ? 'PHOTOGRAPHER' : 'CONSUMER'
 
@@ -53,12 +52,14 @@ function RegisterForm() {
 
       if (result?.error) {
         setError('تم التسجيل بنجاح، يرجى تسجيل الدخول')
-        router.push('/auth/login')
+        window.location.href = '/auth/login'
       } else {
-        // FREE MODE: skip onboarding/subscription prompt, go straight to dashboard
-        // Original: router.push(role === 'PHOTOGRAPHER' ? '/photographer/onboarding' : '/consumer/dashboard')
-        router.push(role === 'PHOTOGRAPHER' ? '/photographer/dashboard' : '/consumer/dashboard')
-        router.refresh()
+        // Hard navigation so the root layout re-runs auth() and SessionProvider
+        // receives a fresh session. router.push() is a soft navigation that
+        // leaves the root layout cached with session=null. router.refresh()
+        // on top of push() races with the navigation and is unreliable.
+        const dashboard = role === 'PHOTOGRAPHER' ? '/photographer/dashboard' : '/consumer/dashboard'
+        window.location.href = dashboard
       }
     } catch {
       setError('حدث خطأ في الشبكة')

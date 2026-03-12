@@ -10,8 +10,9 @@ export default async function MessagesThreadPage({
   params: Promise<{ id: string }>
 }) {
   const session = await auth()
-  if (!session) redirect('/auth/login')
+  const userId = session?.user?.id
+  if (!session || !userId) redirect('/auth/login')
 
   const { id } = await params
-  return <MessagingInbox currentUserId={session.user.id} initialConversationId={id} />
+  return <MessagingInbox currentUserId={userId} initialConversationId={id} />
 }

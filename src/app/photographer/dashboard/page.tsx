@@ -4,9 +4,11 @@ import Link from 'next/link'
 
 export default async function PhotographerDashboardHome() {
   const session = await auth()
+  const userId = session?.user?.id
+  if (!userId) return null // layout guard already redirects; this is a safety net
 
   const profile = await prisma.photographerProfile.findUnique({
-    where: { userId: session!.user.id },
+    where: { userId },
     include: {
       _count: { select: { media: true, incomingRequests: true, bids: true } },
       incomingRequests: {
@@ -27,7 +29,7 @@ export default async function PhotographerDashboardHome() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-800 mb-6">
-        مرحباً، {session!.user.name} 👋
+        مرحباً، {session?.user?.name ?? ''} 👋
       </h1>
 
       {/* Stats */}

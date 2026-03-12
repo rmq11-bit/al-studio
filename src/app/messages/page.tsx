@@ -6,7 +6,8 @@ export const metadata = { title: 'الرسائل | الاستوديو' }
 
 export default async function MessagesPage() {
   const session = await auth()
-  if (!session) redirect('/auth/login')
+  const userId = session?.user?.id
+  if (!session || !userId) redirect('/auth/login')
 
-  return <MessagingInbox currentUserId={session.user.id} />
+  return <MessagingInbox currentUserId={userId} />
 }
