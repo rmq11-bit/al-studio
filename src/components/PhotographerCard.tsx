@@ -5,12 +5,12 @@ interface Props {
   photographer: {
     id: string
     userId: string
-    hourlyRate: number
-    specialties: string
+    hourlyRate: number | null
+    specialties: string | null
     location?: string | null
     user: {
       id: string
-      name: string
+      name: string | null
       avatarUrl?: string | null
       bio?: string | null
     }
@@ -40,7 +40,7 @@ export default function PhotographerCard({ photographer }: Props) {
           )}
           {/* Rate badge */}
           <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-xl text-xs font-bold text-[#C0A4A3] shadow-sm">
-            {photographer.hourlyRate.toLocaleString('ar-SA')} ريال/ساعة
+            {(photographer.hourlyRate ?? 0).toLocaleString('ar-SA')} ريال/ساعة
           </div>
           {/* Gallery count */}
           {photographer.media.length > 0 && (
@@ -61,11 +61,11 @@ export default function PhotographerCard({ photographer }: Props) {
               />
             ) : (
               <div className="w-11 h-11 rounded-full bg-[#C0A4A3] flex items-center justify-center text-white font-bold">
-                {photographer.user.name?.[0]}
+                {(photographer.user.name ?? '؟')[0]}
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-gray-800 truncate">{photographer.user.name}</p>
+              <p className="font-bold text-gray-800 truncate">{photographer.user.name ?? ''}</p>
               {photographer.location && (
                 <p className="text-xs text-gray-400 flex items-center gap-1">
                   <span>📍</span>

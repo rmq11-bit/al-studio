@@ -21,8 +21,15 @@ async function PhotographerList({ searchParams }: { searchParams: Awaited<PagePr
   }
 
   const rateFilter: Record<string, number> = {}
-  if (searchParams.minRate) rateFilter.gte = parseFloat(searchParams.minRate)
-  if (searchParams.maxRate) rateFilter.lte = parseFloat(searchParams.maxRate)
+  // Guard against NaN: parseFloat('abc') === NaN, which Prisma rejects at runtime
+  if (searchParams.minRate) {
+    const v = parseFloat(searchParams.minRate)
+    if (!isNaN(v)) rateFilter.gte = v
+  }
+  if (searchParams.maxRate) {
+    const v = parseFloat(searchParams.maxRate)
+    if (!isNaN(v)) rateFilter.lte = v
+  }
   if (Object.keys(rateFilter).length > 0) where.hourlyRate = rateFilter
 
   let photographers = await prisma.photographerProfile.findMany({
@@ -37,7 +44,9 @@ async function PhotographerList({ searchParams }: { searchParams: Awaited<PagePr
   if (searchParams.q) {
     const lower = searchParams.q.toLowerCase()
     photographers = photographers.filter((p) =>
-      p.user.name.toLowerCase().includes(lower)
+      // Guard: user.name is non-nullable in the schema but could be null in
+      // practice due to direct DB inserts or migration edge cases
+      (p.user.name ?? '').toLowerCase().includes(lower)
     )
   }
 

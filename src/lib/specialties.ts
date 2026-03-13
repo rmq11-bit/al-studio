@@ -9,9 +9,24 @@ export const SPECIALTY_LABELS: Record<string, string> = {
 
 export const SPECIALTY_KEYS = Object.keys(SPECIALTY_LABELS)
 
-export function parseSpecialties(json: string): string[] {
+/**
+ * Safely parse a JSON-encoded specialties string from the database.
+ * Returns [] for any invalid, null, or non-array value so a single
+ * bad row never crashes the browse page.
+ *
+ * Edge cases handled:
+ *   null / undefined     → []
+ *   ""                   → [] (JSON.parse("") throws → catch)
+ *   "null"               → [] (JSON.parse("null") === null, not an array)
+ *   "42" / "true"        → [] (not an array)
+ *   "[]"                 → []
+ *   '["WEDDINGS_EVENTS"]'→ ["WEDDINGS_EVENTS"]
+ */
+export function parseSpecialties(json: string | null | undefined): string[] {
+  if (!json) return []
   try {
-    return JSON.parse(json) as string[]
+    const parsed = JSON.parse(json)
+    return Array.isArray(parsed) ? parsed : []
   } catch {
     return []
   }
