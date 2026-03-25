@@ -70,6 +70,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     strategy: 'jwt',
   },
+  trustHost: true,
   // Support both AUTH_SECRET (NextAuth v5 convention) and NEXTAUTH_SECRET (legacy)
   secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
 })
