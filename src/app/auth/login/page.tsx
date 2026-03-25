@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { loginAction } from './actions'
 import Link from 'next/link'
 
 export default function LoginPage() {
@@ -18,11 +18,7 @@ export default function LoginPage() {
     if (!password) return setError('كلمة المرور مطلوبة')
 
     setLoading(true)
-    const result = await signIn('credentials', {
-      email: email.toLowerCase().trim(),
-      password,
-      redirect: false,
-    })
+    const result = await loginAction(email.toLowerCase().trim(), password)
 
     if (result?.error) {
       setLoading(false)
